@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TrueSight — IP Finder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0a0a0f;
+      --purple-1:#6b21a8;
+      --purple-2:#b176ff;
+      --panel:#0f0b19;
+    }
+    body{
+      margin:0;
+      height:100vh;
+      background:linear-gradient(135deg, rgba(107,33,168,0.1), transparent), var(--bg);
+      font-family:Inter, sans-serif;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      color:#e9e6ff;
+    }
+    h1{
+      font-size:34px;
+      margin-bottom:20px;
+      text-shadow:0 0 12px rgba(177,118,255,0.5);
+    }
+    .btn{
+      padding:16px 32px;
+      font-size:18px;
+      font-weight:700;
+      border:none;
+      border-radius:12px;
+      cursor:pointer;
+      background:linear-gradient(135deg,var(--purple-1),var(--purple-2));
+      color:white;
+      box-shadow:0 0 22px rgba(177,118,255,0.4);
+      transition:transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .btn:hover{
+      transform:scale(1.05);
+      box-shadow:0 0 32px rgba(177,118,255,0.6);
+    }
+    .result{
+      margin-top:32px;
+      padding:20px;
+      min-width:280px;
+      text-align:center;
+      background:var(--panel);
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.08);
+      font-size:18px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 TrueSight IP Finder</h1>
+  <button class="btn" onclick="findIP()">Find My IP</button>
+  <div id="output" class="result">Your IP will appear here...</div>
+
+  <script>
+    async function findIP(){
+      const output=document.getElementById("output");
+      output.textContent="Finding your IP...";
+      try{
+        const res=await fetch("https://api.ipify.org?format=json");
+        const data=await res.json();
+        output.textContent="Your Public IP: " + data.ip;
+      }catch(err){
+        output.textContent="Error fetching IP.";
+      }
+    }
+  </script>
+</body>
+</html>
