@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TrueSight — IP Finder</title>
+  <style>
+    body {
+      background: #0f0f1a;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .card {
+      background: #1b1b2f;
+      padding: 30px;
+      border-radius: 12px;
+      width: 400px;
+      text-align: center;
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.5);
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn-find {
+      background: #7a3cff;
+      color: #fff;
+    }
+    .btn-copy {
+      background: #333;
+      color: #fff;
+    }
+    .info {
+      margin-top: 15px;
+      text-align: left;
+    }
+    .info p {
+      background: #2a2a40;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>TrueSight — IP Finder</h2>
+    <p>Click the button to discover live network info (runs in your browser)</p>
+    <button class="btn-find" onclick="findIP()">🔎 Find My IP</button>
+    <button class="btn-copy" onclick="copyIP()">Copy Public IP</button>
+    <div class="info">
+      <p><strong>Hostname:</strong> <span id="hostname">—</span></p>
+      <p><strong>Local IPs:</strong> <span id="localIP">—</span></p>
+      <p><strong>Outbound (primary) IP:</strong> <span id="outboundIP">—</span></p>
+      <p><strong>Public IP (detected):</strong> <span id="publicIP">—</span></p>
+      <p><strong>Reverse DNS for public IP:</strong> <span id="reverseDNS">—</span></p>
+    </div>
+    <p style="margin-top:10px; font-size:12px; color:#bbb;">
+      Notes: Browser JS can’t reliably get the OS hostname; local IPs may be exposed via WebRTC but can be blocked. Reverse DNS relies on public DNS and is often limited by CORS restrictions.
+    </p>
+  </div>
+
+  <script>
+    let detectedIP = "";
+
+    async function findIP() {
+      // Get public IP
+      try {
+        const res = await fetch("https://api64.ipify.org?format=json");
+        const data = await res.json();
+        detectedIP = data.ip;
+        document.getElementById("publicIP").textContent = detectedIP;
+        document.getElementById("outboundIP").textContent = detectedIP;
+      } catch (e) {
+        console.error("Error fetching IP:", e);
+      }
+
+      // Local IP via WebRTC
+      try {
+        let pc = new RTCPeerConnection({iceServers:[]});
+        pc.createDataChannel("");
+        pc.createOffer().then(offer => pc.setLocalDescription(offer));
+        pc.onicecandidate = (ice) => {
+          if (ice && ice.candidate && ice.candidate.candidate) {
+            const ipMatch = ice.candidate.candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
+            if (ipMatch) {
+              document.getElementById("localIP").textContent = ipMatch[1];
+            }
+          }
+        };
+      } catch (e) {
+        document.getElementById("localIP").textContent = "Blocked";
+      }
+
+      // Hostname (fallback to browser location hostname)
+      document.getElementById("hostname").textContent = window.location.hostname || "Unavailable";
+
+      // Reverse DNS lookup (using DNS resolver API)
+      if (detectedIP) {
+        try {
+          const rdns = await fetch(`https://dns.google/resolve?name=${detectedIP}.in-addr.arpa&type=PTR`);
+          const rdnsData = await rdns.json();
+          if (rdnsData.Answer && rdnsData.Answer[0]) {
+            document.getElementById("reverseDNS").textContent = rdnsData.Answer[0].data;
+          } else {
+            document.getElementById("reverseDNS").textContent = "Not available";
+          }
+        } catch (e) {
+          document.getElementById("reverseDNS").textContent = "Error";
+        }
+      }
+    }
+
+    function copyIP() {
+      if (detectedIP) {
+        navigator.clipboard.writeText(detectedIP);
+        alert("Public IP copied: " + detectedIP);
+      } else {
+        alert("No IP detected yet. Click 'Find My IP' first.");
+      }
+    }
+  </script>
+</body>
+</html>
