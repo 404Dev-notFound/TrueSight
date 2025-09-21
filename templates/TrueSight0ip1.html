@@ -1,0 +1,497 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrueSight — IP Finder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0a0a0f;
+      --purple-1:#6b21a8;
+      --purple-2:#b176ff;
+      --panel:#0f0b19;
+      --glass: rgba(255,255,255,0.03);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: radial-gradient(800px 400px at 10% 10%, rgba(107,33,168,0.07), transparent),
+                  radial-gradient(600px 300px at 90% 90%, rgba(177,118,255,0.05), transparent),
+                  var(--bg);
+      font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      color:#e9e6ff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+    }
+    .wrap{width:100%;max-width:760px}
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(177,118,255,0.08);
+      border-radius:14px;
+      padding:28px;
+      box-shadow:0 12px 36px rgba(107,33,168,0.12);
+      backdrop-filter: blur(8px);
+    }
+    header{display:flex;gap:16px;align-items:center}
+    .logo{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--purple-1),var(--purple-2));display:flex;align-items:center;justify-content:center;font-weight:800;color:white;font-size:20px;box-shadow:0 8px 26px rgba(107,33,168,0.22)}
+    h1{margin:0;font-size:22px}
+    p.sub{margin:6px 0 0 0;color:#d9d1ff}
+
+    .controls{display:flex;gap:12px;margin-top:18px}
+    .btn{
+      padding:12px 18px;border-radius:10px;border:none;cursor:pointer;font-weight:700;background:linear-gradient(135deg,var(--purple-1),var(--purple-2));color:white;box-shadow:0 10px 28px rgba(177,118,255,0.18);transition:transform .15s}
+    .btn:active{transform:scale(.98)}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);box-shadow:none;color:#e8e4ff}
+
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}
+    .info{
+      background:var(--panel);
+      border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,0.02);
+      min-height:72px;display:flex;flex-direction:column;justify-content:center
+    }
+    .label{font-size:12px;color:#bfaeff;margin-bottom:6px}
+    .value{font-size:16px;font-weight:700;color:#fff}
+
+    .full{grid-column:1/-1}
+    .note{margin-top:14px;font-size:13px;color:#b9aef8}
+
+    @media (max-width:680px){
+      .info-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <header>
+        <div class="logo">TS</div>
+        <div>
+          <h1>TrueSight — IP Finder</h1>
+          <p class="sub">Quick host & network information</p>
+        </div>
+      </header>
+
+      <div class="controls">
+        <button class="btn" id="refreshBtn">Fetch Info</button>
+        <button class="btn ghost" id="copyBtn">Copy Public IP</button>
+      </div>
+
+      <div class="info-grid">
+        <div class="info">
+          <div class="label">Hostname</div>
+          <div class="value" id="hostname">—</div>
+        </div>
+
+        <div class="info">
+          <div class="label">Local IPs</div>
+          <div class="value" id="localips">—</div>
+        </div>
+
+        <div class="info">
+          <div class="label">Outbound (primary) IP</div>
+          <div class="value" id="outbound">—</div>
+        </div>
+
+        <div class="info">
+          <div class="label">Public IP (detected)</div>
+          <div class="value" id="publicip">—</div>
+        </div>
+
+        <div class="info full">
+          <div class="label">Reverse DNS for public IP</div>
+          <div class="value" id="reversedns">—</div>
+        </div>
+      </div>
+
+      <div class="note">Click <strong>Fetch Info</strong> to load your system & network details. Only test on systems you own or have permission to.</div>
+    </div>
+  </div>
+
+  <script>
+    async function fetchInfo() {
+      const hostnameEl = document.getElementById('hostname');
+      const localipsEl = document.getElementById('localips');
+      const outboundEl = document.getElementById('outbound');
+      const publicEl = document.getElementById('publicip');
+      const rdnsEl = document.getElementById('reversedns');
+
+      hostnameEl.textContent = localipsEl.textContent = outboundEl.textContent = publicEl.textContent = rdnsEl.textContent = "Loading...";
+
+      try {
+        const res = await fetch('/get_info');
+        const data = await res.json();
+
+        hostnameEl.textContent = data["Hostname"] || "Unavailable";
+        localipsEl.textContent = (data["Local IPs"] && data["Local IPs"].length) ? data["Local IPs"].join(', ') : "Unavailable";
+        outboundEl.textContent = data["Outbound (primary) IP"] || "Unavailable";
+        publicEl.textContent = data["Public IP (detected)"] || "Unavailable";
+        rdnsEl.textContent = data["Reverse DNS for public IP"] || "Unavailable";
+
+      } catch (err) {
+        hostnameEl.textContent = localipsEl.textContent = outboundEl.textContent = publicEl.textContent = rdnsEl.textContent = "Error fetching data";
+        console.error(err);
+      }
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', fetchInfo);
+
+    document.getElementById('copyBtn').addEventListener('click', () => {
+      const ip = document.getElementById('publicip').textContent;
+      if(ip && ip !== "Loading..." && ip !== "Unavailable") {
+        navigator.clipboard.writeText(ip).then(() => {
+          const btn = document.getElementById('copyBtn');
+          btn.textContent = "Copied!";
+          setTimeout(() => btn.textContent = "Copy Public IP", 1500);
+        });
+      }
+    });
+  </script>
+</body>
+</html> -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TrueSight — IP Finder (Live)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0a0a0f;
+      --purple-1:#6b21a8;
+      --purple-2:#b176ff;
+      --panel:#0f0b19;
+      --glass: rgba(255,255,255,0.03);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: radial-gradient(800px 400px at 10% 10%, rgba(107,33,168,0.07), transparent),
+                  radial-gradient(600px 300px at 90% 90%, rgba(177,118,255,0.05), transparent),
+                  var(--bg);
+      font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      color:#e9e6ff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+    }
+    .wrap{width:100%;max-width:760px}
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(177,118,255,0.08);
+      border-radius:14px;
+      padding:28px;
+      box-shadow:0 12px 36px rgba(107,33,168,0.12);
+      backdrop-filter: blur(8px);
+    }
+    header{display:flex;gap:16px;align-items:center}
+    .logo{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--purple-1),var(--purple-2));display:flex;align-items:center;justify-content:center;font-weight:800;color:white;font-size:20px;box-shadow:0 8px 26px rgba(107,33,168,0.22)}
+    h1{margin:0;font-size:22px}
+    p.sub{margin:6px 0 0 0;color:#d9d1ff}
+
+    .controls{display:flex;gap:12px;margin-top:18px}
+    .btn{
+      padding:12px 18px;border-radius:10px;border:none;cursor:pointer;font-weight:700;background:linear-gradient(135deg,var(--purple-1),var(--purple-2));color:white;box-shadow:0 10px 28px rgba(177,118,255,0.18);transition:transform .15s}
+    .btn:active{transform:scale(.98)}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);box-shadow:none;color:#e8e4ff}
+
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}
+    .info{
+      background:var(--panel);
+      border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,0.02);
+      min-height:72px;display:flex;flex-direction:column;justify-content:center
+    }
+    .label{font-size:12px;color:#bfaeff;margin-bottom:6px}
+    .value{font-size:16px;font-weight:700;color:#fff}
+
+    .full{grid-column:1/-1}
+    .note{margin-top:14px;font-size:13px;color:#b9aef8}
+
+    /* subtle pulse for live fetching */
+    .pulse{animation: pulse 1.2s infinite}
+    @keyframes pulse{0%{opacity:1}50%{opacity:0.6}100%{opacity:1}}
+
+    @media (max-width:680px){
+      .info-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <header>
+        <div class="logo">TS</div>
+        <div>
+          <h1>TrueSight — IP Finder</h1>
+          <p class="sub">Click the button to discover live network info (runs in your browser)</p>
+        </div>
+      </header>
+
+      <div class="controls">
+        <button class="btn" id="/get_info">🔎 Find My IP</button>
+        <button class="btn ghost" id="copyBtn">Copy Public IP</button>
+      </div>
+
+      <div class="info-grid">
+        <div class="info">
+          <div class="label">Hostname</div>
+          <div class="value" id="hostname">—</div>
+        </div>
+
+        <div class="info">
+          <div class="label">Local IPs</div>
+          <div class="value" id="localips">—</div>
+        </div>
+
+        <div class="info">
+          <div class="label">Outbound (primary) IP</div>
+          <div class="value" id="outbound">—</div>
+        </div>
+
+        <div class="info">
+          <div class="label">Public IP (detected)</div>
+          <div class="value" id="publicip">—</div>
+        </div>
+
+        <div class="info full">
+          <div class="label">Reverse DNS for public IP</div>
+          <div class="value" id="reversedns">—</div>
+        </div>
+      </div>
+
+      <div class="note">Notes: Browser JS can’t reliably get the OS hostname; local IPs may be exposed via WebRTC but can be blocked. Reverse DNS relies on public DNS and is often limited by CORS restrictions.</div>
+    </div>
+  </div>
+
+  <!-- <script>
+    async function fetchInfoFromBackend(){
+      const hostnameEl = document.getElementById('hostname');
+      const localipsEl  = document.getElementById('localips');
+      const outboundEl  = document.getElementById('outbound');
+      const publicEl    = document.getElementById('publicip');
+      const rdnsEl      = document.getElementById('reversedns');
+
+    // show loading
+      hostnameEl.textContent = 'Checking...';
+      localipsEl.textContent  = 'Discovering...';
+      outboundEl.textContent  = 'Detecting...';
+      publicEl.textContent    = 'Fetching...';
+      rdnsEl.textContent      = 'Looking up...';
+
+      try {
+        const res = await fetch('/api/info');
+        if(!res.ok) throw new Error('Backend returned ' + res.status);
+        const j = await res.json();
+
+        hostnameEl.textContent = j.hostname || '(not available)';
+        localipsEl.textContent  = (j.local_ips && j.local_ips.length) ? j.local_ips.join(', ') : 'Unavailable';
+        outboundEl.textContent  = j.outbound_ip || 'Unavailable';
+        publicEl.textContent    = j.public_ip || 'Unavailable';
+        rdnsEl.textContent      = j.reverse_dns || 'No PTR record';
+      } catch(err) {
+        hostnameEl.textContent = '(error)';
+        localipsEl.textContent  = '-';
+        outboundEl.textContent  = '-';
+        publicEl.textContent    = 'Error';
+        rdnsEl.textContent      = '-';
+        console.error('Fetch /api/info failed:', err);
+        alert('Failed to get info from backend: ' + err);
+      }
+    }
+
+  // wire buttons
+    document.getElementById("fetchBtn").addEventListener("click", function () {
+        fetch("/get_info")
+            .then(response => response.json())
+            .then(data => {
+                let output = "<h2>System Information:</h2><ul>";
+                for (let key in data) {
+                    output += `<li><strong>${key}:</strong> ${Array.isArray(data[key]) ? data[key].join(", ") : data[key]}</li>`;
+                }
+                output += "</ul>";
+                document.getElementById("info").innerHTML = output;
+            });
+    });
+
+  </script> -->
+
+
+
+
+
+  <script>
+    fetch('https://api.ipify.org?format=json')
+    .then(response => response.json())
+    .then(data => {
+        console.log("Your Public IP is:", data.ip);
+    })
+    .catch(err => console.error("Error fetching IP:", err));
+    async function getPublicIP(){
+      try{
+        const r = await fetch('https://api.ipify.org?format=json');
+        const j = await r.json();
+        return j.ip;
+      }catch(e){
+        return null;
+      }
+    }
+
+    // Helper: reverse DNS using Google's DNS over HTTPS (may be CORS-limited)
+    async function getReverseDNS(ip){
+      try{
+        // Try PTR lookup in a couple of ways
+        const try1 = await fetch('https://dns.google/resolve?name=' + ip + '&type=PTR');
+        const j1 = await try1.json();
+        if(j1 && j1.Answer && j1.Answer.length){
+          const ptr = j1.Answer.find(a=>a.type==12);
+          if(ptr) return ptr.data.replace(/\.$/, '');
+        }
+        const parts = ip.split('.').reverse().join('.') + '.in-addr.arpa';
+        const try2 = await fetch('https://dns.google/resolve?name=' + parts + '&type=PTR');
+        const j2 = await try2.json();
+        if(j2 && j2.Answer && j2.Answer.length){
+          const ptr = j2.Answer.find(a=>a.type==12);
+          if(ptr) return ptr.data.replace(/\.$/, '');
+        }
+        return null;
+      }catch(e){
+        return null;
+      }
+    }
+
+    // Get local IPs using WebRTC trick (best-effort)
+    function getLocalIPs(){
+      return new Promise((resolve)=>{
+        const ips = new Set();
+        const RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+        if(!RTCPeerConnection){
+          resolve([]);
+          return;
+        }
+        const pc = new RTCPeerConnection({iceServers:[]});
+        try{ pc.createDataChannel(''); } catch(e){}
+        pc.onicecandidate = (evt)=>{
+          if(!evt || !evt.candidate) return;
+          const cand = evt.candidate.candidate || '';
+          const parts = cand.split(/\s+/);
+          for(const p of parts){
+            if(/^(25[0-5]|2[0-4]\d|[01]?\d?\d)(\.(25[0-5]|2[0-4]\d|[01]?\d?\d)){3}$/.test(p)){
+              ips.add(p);
+            }
+          }
+        };
+        pc.createOffer().then(offer=>pc.setLocalDescription(offer)).catch(()=>resolve([]));
+        setTimeout(()=>{ try{ pc.close(); }catch(e){}; resolve(Array.from(ips)); }, 1400);
+      });
+    }
+
+    document.getElementById('findBtn').addEventListener('click', async ()=>{
+      const hEl = document.getElementById('hostname');
+      const lEl = document.getElementById('localips');
+      const oEl = document.getElementById('outbound');
+      const pEl = document.getElementById('publicip');
+      const rEl = document.getElementById('reversedns');
+
+      hEl.textContent = 'Checking...'; hEl.classList.add('pulse');
+      lEl.textContent = 'Discovering...'; lEl.classList.add('pulse');
+      oEl.textContent = 'Detecting...'; oEl.classList.add('pulse');
+      pEl.textContent = 'Fetching...'; pEl.classList.add('pulse');
+      rEl.textContent = 'Looking up...'; rEl.classList.add('pulse');
+
+      const localIPs = await getLocalIPs();
+      lEl.textContent = localIPs.length ? localIPs.join(', ') : 'Unavailable';
+      lEl.classList.remove('pulse');
+
+      const outbound = localIPs.length ? localIPs[0] : 'Unavailable';
+      oEl.textContent = outbound;
+      oEl.classList.remove('pulse');
+
+      const publicIP = await getPublicIP();
+      pEl.textContent = publicIP || 'Unavailable';
+      pEl.classList.remove('pulse');
+
+      if(publicIP){
+        const rd = await getReverseDNS(publicIP);
+        rEl.textContent = rd || 'No PTR record';
+      }else{
+        rEl.textContent = 'N/A';
+      }
+      rEl.classList.remove('pulse');
+
+      const pageHost = location && location.hostname ? location.hostname : '';
+      if(pageHost && pageHost !== ''){
+        hEl.textContent = pageHost;
+      }else{
+        hEl.textContent = '(not available in browser)';
+      }
+    });
+
+    document.getElementById('copyBtn').addEventListener('click', ()=>{
+      const ip = document.getElementById('publicip').textContent;
+      if(!ip || ip==='Unavailable' || ip==='Fetching...') return;
+      navigator.clipboard?.writeText(ip).then(()=>{
+        const b = document.getElementById('copyBtn');
+        b.textContent = 'Copied!';
+        setTimeout(()=>b.textContent='Copy Public IP', 1400);
+      }).catch(()=> alert('Copy failed — public IP: ' + ip));
+    });
+  </script>
+</body>
+</html> 
